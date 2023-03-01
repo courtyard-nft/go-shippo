@@ -9,9 +9,9 @@ type TransactionInput struct {
 	LabelFileType string `json:"label_file_type"`
 	Async         bool   `json:"async"`
 
-	Shipment         *ShipmentInput `json:"shipment,omitempty"`              // instant call only: https://goshippo.com/docs/reference#transactions-create-instant
-	CarrierAccount   string         `json:"carrier_account,omitempty"`       // instant call only: https://goshippo.com/docs/reference#transactions-create-instant
-	ServerLevelToken string         `json:"servericelevel_token, omitempty"` // instant call only: https://goshippo.com/docs/reference#transactions-create-instant
+	Shipment         *ShipmentInput `json:"shipment,omitempty"`             // instant call only: https://goshippo.com/docs/reference#transactions-create-instant
+	CarrierAccount   string         `json:"carrier_account,omitempty"`      // instant call only: https://goshippo.com/docs/reference#transactions-create-instant
+	ServerLevelToken string         `json:"servericelevel_token,omitempty"` // instant call only: https://goshippo.com/docs/reference#transactions-create-instant
 }
 
 // See https://goshippo.com/docs/reference#transactions

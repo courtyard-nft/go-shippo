@@ -16,7 +16,7 @@ type AddressInput struct {
 	Street3       string `json:"street3,omitempty"`
 	City          string `json:"city,omitempty"`
 	Zip           string `json:"zip,omitempty"`
-	State         string `json:"state,omtiempty"`
+	State         string `json:"state,omitempty"`
 	Country       string `json:"country,omitempty"`
 	Phone         string `json:"phone,omitempty"`
 	Email         string `json:"email,omitempty"`

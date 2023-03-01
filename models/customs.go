@@ -53,7 +53,7 @@ type CustomsDeclarationInput struct {
 	ContentsType        string      `json:"contents_type"`
 	ContentsExplanation string      `json:"contents_explanation,omitempty"`
 	ExporterReference   string      `json:"exporter_reference,omitempty"`
-	importerReference   string      `json:"importer_reference,omitempty"`
+	ImporterReference   string      `json:"importer_reference,omitempty"`
 	Invoice             string      `json:"invoice,omitempty"`
 	License             string      `json:"license,omitempty"`
 	Certificate         string      `json:"certificate,omitempty"`
