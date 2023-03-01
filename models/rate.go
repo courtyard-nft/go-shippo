@@ -17,6 +17,7 @@ type Rate struct {
 	CarrierAccount   string           `json:"carrier_account"`
 	Zone             string           `json:"zone"`
 	Messages         []*OutputMessage `json:"messages"`
+	InsurancePrice   string           `json:"included_insurance_price,omitempty"`
 	Test             bool             `json:"test"`
 }
 
