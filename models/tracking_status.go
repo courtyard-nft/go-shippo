@@ -12,6 +12,7 @@ const (
 
 // See https://goshippo.com/docs/reference#tracks
 type TrackingStatusInput struct {
+	CommonOutputFields
 	Carrier        string `json:"carrier"`
 	TrackingNumber string `json:"tracking_number"`
 	Metadata       string `json:"metadata,omitempty"`
@@ -29,6 +30,7 @@ type TrackingStatus struct {
 }
 
 type TrackingStatusDict struct {
+	CommonOutputFields
 	Status        string                  `json:"status,omitempty"`
 	StatusDetails string                  `json:"status_details,omitempty"`
 	StatusDate    time.Time               `json:"status_date,omitempty"`
