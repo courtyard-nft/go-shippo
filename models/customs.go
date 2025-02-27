@@ -44,25 +44,36 @@ type CustomsItem struct {
 	Test        bool   `json:"test"`
 }
 
+type TaxIdentification struct {
+	Number string `json:"number,omitempty"`
+	Type   string `json:"type,omitempty"`
+}
+
+type ExporterIdentification struct {
+	EoriNumber string            `json:"eori_number,omitempty"`
+	TaxId      TaxIdentification `json:"tax_id,omitempty"`
+}
+
 // See https://goshippo.com/docs/reference#customsdeclarations
 type CustomsDeclarationInput struct {
-	CertifySigner       string      `json:"certify_signer"`
-	Certify             bool        `json:"certify"`
-	Items               interface{} `json:"items"` // []string or []*CustomsItemInput
-	NonDeliveryOption   string      `json:"non_delivery_option"`
-	ContentsType        string      `json:"contents_type"`
-	ContentsExplanation string      `json:"contents_explanation,omitempty"`
-	ExporterReference   string      `json:"exporter_reference,omitempty"`
-	ImporterReference   string      `json:"importer_reference,omitempty"`
-	Invoice             string      `json:"invoice,omitempty"`
-	License             string      `json:"license,omitempty"`
-	Certificate         string      `json:"certificate,omitempty"`
-	Notes               string      `json:"notes,omitempty"`
-	EEL_PFC             string      `json:"eel_pfc,omitempty"`
-	AES_ITN             string      `json:"aes_itn,omitempty"`
-	Incoterm            string      `json:"incoterm,omitempty"`
-	Metadata            string      `json:"metadata,omitempty"`
-	Disclaimer          string      `json:"disclaimer,omitempty"`
+	CertifySigner          string                 `json:"certify_signer"`
+	Certify                bool                   `json:"certify"`
+	Items                  interface{}            `json:"items"` // []string or []*CustomsItemInput
+	NonDeliveryOption      string                 `json:"non_delivery_option"`
+	ContentsType           string                 `json:"contents_type"`
+	ContentsExplanation    string                 `json:"contents_explanation,omitempty"`
+	ExporterReference      string                 `json:"exporter_reference,omitempty"`
+	ImporterReference      string                 `json:"importer_reference,omitempty"`
+	Invoice                string                 `json:"invoice,omitempty"`
+	License                string                 `json:"license,omitempty"`
+	Certificate            string                 `json:"certificate,omitempty"`
+	Notes                  string                 `json:"notes,omitempty"`
+	EEL_PFC                string                 `json:"eel_pfc,omitempty"`
+	AES_ITN                string                 `json:"aes_itn,omitempty"`
+	Incoterm               string                 `json:"incoterm,omitempty"`
+	Metadata               string                 `json:"metadata,omitempty"`
+	Disclaimer             string                 `json:"disclaimer,omitempty"`
+	ExporterIdentification ExporterIdentification `json:"exporter_identification,omitempty"`
 }
 
 // See https://goshippo.com/docs/reference#customsdeclarations
