@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/courtyard-nft/go-shippo/errors"
 	"github.com/courtyard-nft/go-shippo/models"
@@ -22,6 +23,7 @@ type Client struct {
 	privateToken string
 	apiVersion   string
 	logger       *log.Logger
+	httpClient   *http.Client
 }
 
 type listOutputCallback func(v json.RawMessage) error
@@ -31,6 +33,9 @@ func NewClient(privateToken, apiVersion string) *Client {
 	return &Client{
 		privateToken: privateToken,
 		apiVersion:   apiVersion,
+		httpClient: &http.Client{
+			Timeout: 30 * time.Second,
+		},
 	}
 }
 
@@ -147,10 +152,6 @@ func (c *Client) createRequest(method, url string, bodyObject interface{}) (req 
 		req.Header.Set("Shippo-API-Version", c.apiVersion)
 	}
 
-	// no keep-alive
-	req.Header.Set("Connection", "close")
-	req.Close = true
-
 	return req, nil
 }
 
@@ -163,9 +164,7 @@ func (c *Client) executeRequest(req *http.Request, output interface{}) (err erro
 		}()
 	}
 
-	httpClient := http.Client{}
-
-	res, err := httpClient.Do(req)
+	res, err := c.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("error making HTTP request: %s", err.Error())
 	}
