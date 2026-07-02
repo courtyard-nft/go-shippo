@@ -22,6 +22,7 @@ type Client struct {
 	privateToken string
 	apiVersion   string
 	logger       *log.Logger
+	baseURL      string
 }
 
 type listOutputCallback func(v json.RawMessage) error
@@ -35,6 +36,7 @@ func NewClient(privateToken, apiVersion string) *Client {
 	return &Client{
 		privateToken: privateToken,
 		apiVersion:   apiVersion,
+		baseURL:      shippoAPIBaseURL,
 	}
 }
 
@@ -47,7 +49,7 @@ func (c *Client) SetTraceLogger(logger *log.Logger) *log.Logger {
 }
 
 func (c *Client) do(method, path string, input, output interface{}) error {
-	url := shippoAPIBaseURL + path
+	url := c.baseURL + path
 
 	req, err := c.createRequest(method, url, input)
 	if err != nil {
@@ -65,7 +67,7 @@ func (c *Client) do(method, path string, input, output interface{}) error {
 }
 
 func (c *Client) doList(method, path string, input interface{}, outputCallback listOutputCallback) error {
-	nextURL := shippoAPIBaseURL + path + "?results=25"
+	nextURL := c.baseURL + path + "?results=25"
 
 	for {
 		req, err := c.createRequest(method, nextURL, input)
@@ -98,7 +100,7 @@ func (c *Client) doList(method, path string, input interface{}, outputCallback l
 }
 
 func (c *Client) doListWithStop(method, path string, input interface{}, outputCallback listOutputCallbackWithStop) error {
-	nextURL := shippoAPIBaseURL + path + "?results=100"
+	nextURL := c.baseURL + path + "?results=100"
 
 	for {
 		req, err := c.createRequest(method, nextURL, input)
