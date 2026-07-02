@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/courtyard-nft/go-shippo/models"
 )
@@ -41,6 +42,27 @@ func (c *Client) ListAllTransactions() ([]*models.Transaction, error) {
 
 		list = append(list, item)
 		return nil
+	})
+	return list, err
+}
+
+// ListTransactionsCreatedAfter lists transaction objects created after the given cutoff time.
+// Shippo returns transactions ordered newest-first, so pagination stops as soon as a
+// transaction created at or before the cutoff is encountered.
+func (c *Client) ListTransactionsCreatedAfter(cutoff time.Time) ([]*models.Transaction, error) {
+	list := []*models.Transaction{}
+	err := c.doListWithStop(http.MethodGet, "/transactions/", nil, func(v json.RawMessage) (bool, error) {
+		item := &models.Transaction{}
+		if err := json.Unmarshal(v, item); err != nil {
+			return false, err
+		}
+
+		if !item.ObjectCreated.After(cutoff) {
+			return true, nil
+		}
+
+		list = append(list, item)
+		return false, nil
 	})
 	return list, err
 }
