@@ -22,15 +22,21 @@ type Client struct {
 	privateToken string
 	apiVersion   string
 	logger       *log.Logger
+	baseURL      string
 }
 
 type listOutputCallback func(v json.RawMessage) error
+
+// listOutputCallbackWithStop processes a single list item and returns
+// stop=true to end pagination early without an error.
+type listOutputCallbackWithStop func(v json.RawMessage) (stop bool, err error)
 
 // NewClient creates a new Shippo API client instance.
 func NewClient(privateToken, apiVersion string) *Client {
 	return &Client{
 		privateToken: privateToken,
 		apiVersion:   apiVersion,
+		baseURL:      shippoAPIBaseURL,
 	}
 }
 
@@ -43,7 +49,7 @@ func (c *Client) SetTraceLogger(logger *log.Logger) *log.Logger {
 }
 
 func (c *Client) do(method, path string, input, output interface{}) error {
-	url := shippoAPIBaseURL + path
+	url := c.baseURL + path
 
 	req, err := c.createRequest(method, url, input)
 	if err != nil {
@@ -61,7 +67,7 @@ func (c *Client) do(method, path string, input, output interface{}) error {
 }
 
 func (c *Client) doList(method, path string, input interface{}, outputCallback listOutputCallback) error {
-	nextURL := shippoAPIBaseURL + path + "?results=25"
+	nextURL := c.baseURL + path + "?results=25"
 
 	for {
 		req, err := c.createRequest(method, nextURL, input)
@@ -80,6 +86,43 @@ func (c *Client) doList(method, path string, input interface{}, outputCallback l
 		for _, v := range listOutput.Results {
 			if err := outputCallback(v); err != nil {
 				return fmt.Errorf("error unmarshalling output item: %s", err.Error())
+			}
+		}
+
+		if listOutput.NextPageURL == nil {
+			break
+		}
+
+		nextURL = *listOutput.NextPageURL
+	}
+
+	return nil
+}
+
+func (c *Client) doListWithStop(method, path string, input interface{}, outputCallback listOutputCallbackWithStop) error {
+	nextURL := c.baseURL + path + "?results=100"
+
+	for {
+		req, err := c.createRequest(method, nextURL, input)
+		if err != nil {
+			return fmt.Errorf("error creating request object: %s", err.Error())
+		}
+
+		listOutput := &models.ListAPIOutput{}
+		if err := c.executeRequest(req, listOutput); err != nil {
+			if aerr, ok := err.(*errors.APIError); ok {
+				return aerr
+			}
+			return fmt.Errorf("error executing request: %s", err.Error())
+		}
+
+		for _, v := range listOutput.Results {
+			stop, err := outputCallback(v)
+			if err != nil {
+				return fmt.Errorf("error unmarshalling output item: %s", err.Error())
+			}
+			if stop {
+				return nil
 			}
 		}
 
