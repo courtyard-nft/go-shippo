@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -39,7 +40,7 @@ func createShipment(c *client.Client) *models.Shipment {
 		Phone:   "+1 555 341 9393",
 		Email:   "support@goshippo.com",
 	}
-	addressFrom, err := c.CreateAddress(addressFromInput)
+	addressFrom, err := c.CreateAddress(context.Background(), addressFromInput)
 	if err != nil {
 		panic(err)
 	}
@@ -55,7 +56,7 @@ func createShipment(c *client.Client) *models.Shipment {
 		Phone:   "+1 555 341 9393",
 		Email:   "support@goshippo.com",
 	}
-	addressTo, err := c.CreateAddress(addressToInput)
+	addressTo, err := c.CreateAddress(context.Background(), addressToInput)
 	if err != nil {
 		panic(err)
 	}
@@ -69,7 +70,7 @@ func createShipment(c *client.Client) *models.Shipment {
 		Weight:       "2",
 		MassUnit:     models.MassUnitPound,
 	}
-	parcel, err := c.CreateParcel(parcelInput)
+	parcel, err := c.CreateParcel(context.Background(), parcelInput)
 	if err != nil {
 		panic(err)
 	}
@@ -81,7 +82,7 @@ func createShipment(c *client.Client) *models.Shipment {
 		Parcels:     []string{parcel.ObjectID},
 		Async:       false,
 	}
-	shipment, err := c.CreateShipment(shipmentInput)
+	shipment, err := c.CreateShipment(context.Background(), shipmentInput)
 	if err != nil {
 		panic(err)
 	}
@@ -97,7 +98,7 @@ func purchaseShippingLabel(c *client.Client, shipment *models.Shipment) {
 		LabelFileType: models.LabelFileTypePDF,
 		Async:         false,
 	}
-	transaction, err := c.PurchaseShippingLabel(transactionInput)
+	transaction, err := c.PurchaseShippingLabel(context.Background(), transactionInput)
 	if err != nil {
 		panic(err)
 	}

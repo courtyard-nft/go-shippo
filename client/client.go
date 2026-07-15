@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,9 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/propagation"
 
 	"github.com/courtyard-nft/go-shippo/errors"
 	"github.com/courtyard-nft/go-shippo/models"
@@ -23,6 +27,7 @@ type Client struct {
 	apiVersion   string
 	logger       *log.Logger
 	baseURL      string
+	httpClient   *http.Client
 }
 
 type listOutputCallback func(v json.RawMessage) error
@@ -37,7 +42,78 @@ func NewClient(privateToken, apiVersion string) *Client {
 		privateToken: privateToken,
 		apiVersion:   apiVersion,
 		baseURL:      shippoAPIBaseURL,
+		httpClient:   newInstrumentedHTTPClient(),
 	}
+}
+
+// newInstrumentedHTTPClient returns an HTTP client whose transport is wrapped
+// with OpenTelemetry instrumentation so every Shippo API request emits a client
+// span, giving visibility into outbound Shippo calls. Only the W3C trace
+// context is propagated to Shippo; baggage is intentionally excluded so
+// internal metadata is never sent to a third party. When no TracerProvider is
+// configured the OTel API falls back to a no-op, so this adds negligible
+// overhead for callers that do not use tracing.
+func newInstrumentedHTTPClient() *http.Client {
+	return &http.Client{
+		Transport: otelhttp.NewTransport(
+			http.DefaultTransport,
+			otelhttp.WithSpanNameFormatter(spanName),
+			otelhttp.WithPropagators(propagation.TraceContext{}),
+		),
+	}
+}
+
+// spanName names client spans as "host METHOD /normalized/path", collapsing
+// object-ID path segments to "{id}" so high-cardinality identifiers do not
+// fragment span names.
+func spanName(_ string, r *http.Request) string {
+	return r.URL.Host + " " + r.Method + " " + normalizePathIDs(r.URL.Path)
+}
+
+// normalizePathIDs replaces Shippo object-ID path segments (all-digit segments,
+// UUIDs, and long hexadecimal identifiers) with "{id}" to bound span-name
+// cardinality.
+func normalizePathIDs(p string) string {
+	segments := strings.Split(p, "/")
+	for i, s := range segments {
+		if isObjectID(s) {
+			segments[i] = "{id}"
+		}
+	}
+	return strings.Join(segments, "/")
+}
+
+// isObjectID reports whether a path segment looks like a Shippo identifier.
+// Shippo object IDs are 32-character hex strings and UUIDs are 36-character
+// hyphenated hex; any sufficiently long hex-only segment is treated as an ID.
+func isObjectID(s string) bool {
+	if isAllDigits(s) {
+		return true
+	}
+	hexLen := 0
+	for _, r := range s {
+		switch {
+		case r >= '0' && r <= '9', r >= 'a' && r <= 'f', r >= 'A' && r <= 'F':
+			hexLen++
+		case r == '-':
+		default:
+			return false
+		}
+	}
+	return hexLen >= 16
+}
+
+// isAllDigits reports whether s is non-empty and contains only ASCII digits.
+func isAllDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // SetTraceLogger sets a new trace logger and returns the old logger.
@@ -48,10 +124,10 @@ func (c *Client) SetTraceLogger(logger *log.Logger) *log.Logger {
 	return oldLogger
 }
 
-func (c *Client) do(method, path string, input, output interface{}) error {
+func (c *Client) do(ctx context.Context, method, path string, input, output interface{}) error {
 	url := c.baseURL + path
 
-	req, err := c.createRequest(method, url, input)
+	req, err := c.createRequest(ctx, method, url, input)
 	if err != nil {
 		return fmt.Errorf("error creating request object: %s", err.Error())
 	}
@@ -66,11 +142,11 @@ func (c *Client) do(method, path string, input, output interface{}) error {
 	return nil
 }
 
-func (c *Client) doList(method, path string, input interface{}, outputCallback listOutputCallback) error {
+func (c *Client) doList(ctx context.Context, method, path string, input interface{}, outputCallback listOutputCallback) error {
 	nextURL := c.baseURL + path + "?results=25"
 
 	for {
-		req, err := c.createRequest(method, nextURL, input)
+		req, err := c.createRequest(ctx, method, nextURL, input)
 		if err != nil {
 			return fmt.Errorf("error creating request object: %s", err.Error())
 		}
@@ -99,11 +175,11 @@ func (c *Client) doList(method, path string, input interface{}, outputCallback l
 	return nil
 }
 
-func (c *Client) doListWithStop(method, path string, input interface{}, outputCallback listOutputCallbackWithStop) error {
+func (c *Client) doListWithStop(ctx context.Context, method, path string, input interface{}, outputCallback listOutputCallbackWithStop) error {
 	nextURL := c.baseURL + path + "?results=100"
 
 	for {
-		req, err := c.createRequest(method, nextURL, input)
+		req, err := c.createRequest(ctx, method, nextURL, input)
 		if err != nil {
 			return fmt.Errorf("error creating request object: %s", err.Error())
 		}
@@ -136,7 +212,7 @@ func (c *Client) doListWithStop(method, path string, input interface{}, outputCa
 	return nil
 }
 
-func (c *Client) createRequest(method, url string, bodyObject interface{}) (req *http.Request, err error) {
+func (c *Client) createRequest(ctx context.Context, method, url string, bodyObject interface{}) (req *http.Request, err error) {
 	var reqBodyDebug []byte
 
 	if c.logger != nil {
@@ -178,7 +254,7 @@ func (c *Client) createRequest(method, url string, bodyObject interface{}) (req 
 		reqBody = bytes.NewBuffer(data)
 	}
 
-	req, err = http.NewRequest(method, url, reqBody)
+	req, err = http.NewRequestWithContext(ctx, method, url, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating HTTP request: %s", err.Error())
 	}
@@ -206,9 +282,7 @@ func (c *Client) executeRequest(req *http.Request, output interface{}) (err erro
 		}()
 	}
 
-	httpClient := http.Client{}
-
-	res, err := httpClient.Do(req)
+	res, err := c.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("error making HTTP request: %s", err.Error())
 	}

@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -81,7 +82,7 @@ func TestListTransactionsCreatedAfter_StopsAtCutoffWithoutFetchingOlderPages(t *
 	server, pagesRequested := newTransactionListServer(t, pages)
 	defer server.Close()
 
-	txs, err := newTestClient(server.URL).ListTransactionsCreatedAfter(cutoff)
+	txs, err := newTestClient(server.URL).ListTransactionsCreatedAfter(context.Background(), cutoff)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -113,7 +114,7 @@ func TestListTransactionsCreatedAfter_PaginatesAllPagesWhenAllNewerThanCutoff(t 
 	server, pagesRequested := newTransactionListServer(t, pages)
 	defer server.Close()
 
-	txs, err := newTestClient(server.URL).ListTransactionsCreatedAfter(cutoff)
+	txs, err := newTestClient(server.URL).ListTransactionsCreatedAfter(context.Background(), cutoff)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -138,7 +139,7 @@ func TestListTransactionsCreatedAfter_ReturnsEmptyListWhenFirstTransactionIsOld(
 	server, pagesRequested := newTransactionListServer(t, pages)
 	defer server.Close()
 
-	txs, err := newTestClient(server.URL).ListTransactionsCreatedAfter(cutoff)
+	txs, err := newTestClient(server.URL).ListTransactionsCreatedAfter(context.Background(), cutoff)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -157,7 +158,7 @@ func TestListTransactionsCreatedAfter_ReturnsAPIError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := newTestClient(server.URL).ListTransactionsCreatedAfter(time.Now().AddDate(0, 0, -90))
+	_, err := newTestClient(server.URL).ListTransactionsCreatedAfter(context.Background(), time.Now().AddDate(0, 0, -90))
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}

@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -10,31 +11,31 @@ import (
 )
 
 // PurchaseShippingLabel creates a new transaction object and purchases the shipping label for the provided rate.
-func (c *Client) PurchaseShippingLabel(input *models.TransactionInput) (*models.Transaction, error) {
+func (c *Client) PurchaseShippingLabel(ctx context.Context, input *models.TransactionInput) (*models.Transaction, error) {
 	if input == nil {
 		return nil, errors.New("nil input")
 	}
 
 	output := &models.Transaction{}
-	err := c.do(http.MethodPost, "/transactions/", input, output)
+	err := c.do(ctx, http.MethodPost, "/transactions/", input, output)
 	return output, err
 }
 
 // RetrieveTransaction retrieves an existing transaction by object id.
-func (c *Client) RetrieveTransaction(objectID string) (*models.Transaction, error) {
+func (c *Client) RetrieveTransaction(ctx context.Context, objectID string) (*models.Transaction, error) {
 	if objectID == "" {
 		return nil, errors.New("empty object ID")
 	}
 
 	output := &models.Transaction{}
-	err := c.do(http.MethodGet, "/transactions/"+objectID, nil, output)
+	err := c.do(ctx, http.MethodGet, "/transactions/"+objectID, nil, output)
 	return output, err
 }
 
 // ListAllTransactions lists all transaction objects.
-func (c *Client) ListAllTransactions() ([]*models.Transaction, error) {
+func (c *Client) ListAllTransactions(ctx context.Context) ([]*models.Transaction, error) {
 	list := []*models.Transaction{}
-	err := c.doList(http.MethodGet, "/transactions/", nil, func(v json.RawMessage) error {
+	err := c.doList(ctx, http.MethodGet, "/transactions/", nil, func(v json.RawMessage) error {
 		item := &models.Transaction{}
 		if err := json.Unmarshal(v, item); err != nil {
 			return err
@@ -49,9 +50,9 @@ func (c *Client) ListAllTransactions() ([]*models.Transaction, error) {
 // ListTransactionsCreatedAfter lists transaction objects created after the given cutoff time.
 // Shippo returns transactions ordered newest-first, so pagination stops as soon as a
 // transaction created at or before the cutoff is encountered.
-func (c *Client) ListTransactionsCreatedAfter(cutoff time.Time) ([]*models.Transaction, error) {
+func (c *Client) ListTransactionsCreatedAfter(ctx context.Context, cutoff time.Time) ([]*models.Transaction, error) {
 	list := []*models.Transaction{}
-	err := c.doListWithStop(http.MethodGet, "/transactions/", nil, func(v json.RawMessage) (bool, error) {
+	err := c.doListWithStop(ctx, http.MethodGet, "/transactions/", nil, func(v json.RawMessage) (bool, error) {
 		item := &models.Transaction{}
 		if err := json.Unmarshal(v, item); err != nil {
 			return false, err

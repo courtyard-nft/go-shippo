@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -9,31 +10,31 @@ import (
 )
 
 // CreateParcel creates a new parcel object.
-func (c *Client) CreateParcel(input *models.ParcelInput) (*models.Parcel, error) {
+func (c *Client) CreateParcel(ctx context.Context, input *models.ParcelInput) (*models.Parcel, error) {
 	if input == nil {
 		return nil, errors.New("nil input")
 	}
 
 	output := &models.Parcel{}
-	err := c.do(http.MethodPost, "/parcels/", input, output)
+	err := c.do(ctx, http.MethodPost, "/parcels/", input, output)
 	return output, err
 }
 
 // RetrieveParcel retrieves an existing parcel by object id.
-func (c *Client) RetrieveParcel(objectID string) (*models.Parcel, error) {
+func (c *Client) RetrieveParcel(ctx context.Context, objectID string) (*models.Parcel, error) {
 	if objectID == "" {
 		return nil, errors.New("empty object ID")
 	}
 
 	output := &models.Parcel{}
-	err := c.do(http.MethodGet, "/parcels/"+objectID, nil, output)
+	err := c.do(ctx, http.MethodGet, "/parcels/"+objectID, nil, output)
 	return output, err
 }
 
 // ListAllParcels lists all parcel objects.
-func (c *Client) ListAllParcels() ([]*models.Parcel, error) {
+func (c *Client) ListAllParcels(ctx context.Context) ([]*models.Parcel, error) {
 	list := []*models.Parcel{}
-	err := c.doList(http.MethodGet, "/parcels/", nil, func(v json.RawMessage) error {
+	err := c.doList(ctx, http.MethodGet, "/parcels/", nil, func(v json.RawMessage) error {
 		item := &models.Parcel{}
 		if err := json.Unmarshal(v, item); err != nil {
 			return err

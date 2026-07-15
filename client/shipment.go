@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -17,7 +18,7 @@ import (
 // The Shippo API currently supports Scan-based returns for USPS, Fedex and UPS.
 // When the ReturnOf flag is set, Shippo API will automatically swap the address_from and address_to fields for label creation.
 // Please check the return service terms and condition for the carrier you intend to use.
-func (c *Client) CreateShipment(input *models.ShipmentInput) (*models.Shipment, error) {
+func (c *Client) CreateShipment(ctx context.Context, input *models.ShipmentInput) (*models.Shipment, error) {
 	if input == nil {
 		return nil, errors.New("nil input")
 	}
@@ -57,25 +58,25 @@ func (c *Client) CreateShipment(input *models.ShipmentInput) (*models.Shipment, 
 	}
 
 	output := &models.Shipment{}
-	err := c.do(http.MethodPost, "/shipments/", input, output)
+	err := c.do(ctx, http.MethodPost, "/shipments/", input, output)
 	return output, err
 }
 
 // RetrieveShipment retrieves an existing shipment by object id.
-func (c *Client) RetrieveShipment(objectID string) (*models.Shipment, error) {
+func (c *Client) RetrieveShipment(ctx context.Context, objectID string) (*models.Shipment, error) {
 	if objectID == "" {
 		return nil, errors.New("empty object ID")
 	}
 
 	output := &models.Shipment{}
-	err := c.do(http.MethodGet, "/shipments/"+objectID, nil, output)
+	err := c.do(ctx, http.MethodGet, "/shipments/"+objectID, nil, output)
 	return output, err
 }
 
 // ListAllShipments lists all shipment objects.
-func (c *Client) ListAllShipments() ([]*models.Shipment, error) {
+func (c *Client) ListAllShipments(ctx context.Context) ([]*models.Shipment, error) {
 	list := []*models.Shipment{}
-	err := c.doList(http.MethodGet, "/shipments/", nil, func(v json.RawMessage) error {
+	err := c.doList(ctx, http.MethodGet, "/shipments/", nil, func(v json.RawMessage) error {
 		item := &models.Shipment{}
 		if err := json.Unmarshal(v, item); err != nil {
 			return err

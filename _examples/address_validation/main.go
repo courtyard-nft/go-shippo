@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -29,7 +30,7 @@ func main() {
 		Email:    "shippotle@goshippo.com",
 		Validate: true,
 	}
-	address1, err := c.CreateAddress(address1Input)
+	address1, err := c.CreateAddress(context.Background(), address1Input)
 	if err != nil {
 		panic(err)
 	}
@@ -46,7 +47,7 @@ func main() {
 		Email:    "mrhippo@goshippo.com",
 		Validate: true,
 	}
-	address2, err := c.CreateAddress(address2Input)
+	address2, err := c.CreateAddress(context.Background(), address2Input)
 	if err != nil {
 		panic(err)
 	}
