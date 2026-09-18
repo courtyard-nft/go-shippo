@@ -40,6 +40,13 @@ func NewClient(privateToken, apiVersion string) *Client {
 	}
 }
 
+// NewClientWithBaseURL creates a Shippo API client that talks to baseURL instead of the production API; intended for tests.
+func NewClientWithBaseURL(privateToken, apiVersion, baseURL string) *Client {
+	c := NewClient(privateToken, apiVersion)
+	c.baseURL = strings.TrimRight(baseURL, "/")
+	return c
+}
+
 // SetTraceLogger sets a new trace logger and returns the old logger.
 // If logger is not nil, Client will output all internal messages to the logger.
 func (c *Client) SetTraceLogger(logger *log.Logger) *log.Logger {
