@@ -158,6 +158,11 @@ func (c *Client) createRequest(method, url string, bodyObject interface{}) (req 
 
 			headers := []string{}
 			for hk, hva := range req.Header {
+				// Never log the Authorization header: it contains the private
+				// Shippo token and would leak it into application logs.
+				if strings.EqualFold(hk, "Authorization") {
+					continue
+				}
 				for _, hv := range hva {
 					headers = append(headers, fmt.Sprintf("%s=%s", hk, hv))
 				}
